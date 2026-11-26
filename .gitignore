@@ -1,5 +1,7 @@
 node_modules
 .vscode
+cotilla.wasm
+wasm_exec.js
 
 # Output
 .output
