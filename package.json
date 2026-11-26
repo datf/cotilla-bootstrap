@@ -1,0 +1,19 @@
+{
+  "name": "cotilla-bootstrap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prebuild": "node -e \"const fs=require('fs'), cp=require('child_process'), r=cp.execSync('go env GOROOT').toString().trim(); const p=['/lib/wasm/wasm_exec.js','/misc/wasm/wasm_exec.js'].map(x=>r+x).find(fs.existsSync); fs.mkdirSync('src/vendor',{recursive:true}); fs.copyFileSync(p,'src/vendor/wasm_exec.js'); const wasmPaths=['../bootstrap/cotilla.wasm','../web/cotilla.wasm']; const w=wasmPaths.find(fs.existsSync); if(w) fs.copyFileSync(w,'cotilla.wasm');\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "type": "module",
+  "devDependencies": {
+    "html-minifier-terser": "^7.2.0",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4"
+  }
+}

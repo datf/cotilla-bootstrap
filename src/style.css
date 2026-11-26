@@ -1,0 +1,70 @@
+:root {
+  color-scheme: dark light;
+  --bg: #0b0c0e;
+  --track: rgba(255, 255, 255, 0.08);
+  --fill: #4c6ef5;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f8f9fa;
+    --track: rgba(0, 0, 0, 0.08);
+    --fill: #3b5bdb;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg);
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+progress {
+  width: 220px;
+  height: 4px;
+  border: none;
+  border-radius: 2px;
+  background-color: var(--track);
+  color: var(--fill);
+  accent-color: var(--fill);
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background-color: var(--track);
+  border-radius: 2px;
+}
+
+progress::-webkit-progress-value {
+  background-color: var(--fill);
+  border-radius: 2px;
+  transition: width 0.15s ease-out;
+}
+
+progress::-moz-progress-bar {
+  background-color: var(--fill);
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  progress::-webkit-progress-value {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  progress {
+    border: 1px solid CanvasText;
+  }
+}
