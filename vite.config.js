@@ -2,8 +2,11 @@ import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 import { minify } from 'html-minifier-terser';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import zlib from 'node:zlib';
+
+const require = createRequire(import.meta.url);
 
 const minifyHtml = () => ({
   name: 'html-minifier',
@@ -23,34 +26,52 @@ const minifyHtml = () => ({
 let manifest = {};
 const dir = typeof import.meta.dirname !== 'undefined' ? import.meta.dirname : path.dirname(new URL(import.meta.url).pathname);
 
+function resolveWasmDir(rootDir) {
+  const candidates = [];
+  if (process.env.COTILLA_WASM_DIR) {
+    candidates.push(path.resolve(rootDir, process.env.COTILLA_WASM_DIR));
+  }
+  candidates.push(path.resolve(rootDir, '../dist/wasm'));
+  try {
+    candidates.push(path.dirname(require.resolve('@datf/cotilla-wasm/package.json')));
+  } catch {
+    // Optional npm package fallback for standalone builds
+  }
+  candidates.push(rootDir);
+  return candidates.find((d) => fs.existsSync(path.join(d, 'cotilla.wasm.gz')) || fs.existsSync(path.join(d, 'cotilla.wasm'))) || rootDir;
+}
+
+const VIRTUAL_WASM_ID = '\0cotilla-wasm-gzip';
+
 const gzipWasmPlugin = (rootDir) => ({
   name: 'gzip-wasm',
   enforce: 'pre',
+  resolveId(source) {
+    if (source.includes('cotilla.wasm')) {
+      return VIRTUAL_WASM_ID;
+    }
+  },
   load(id) {
-    if (id.includes('cotilla.wasm')) {
-      const cleanPath = id.replace(/\?.*$/, '');
-      let filePath = cleanPath;
-      if (!fs.existsSync(filePath)) {
-        filePath = path.resolve(rootDir, 'cotilla.wasm');
+    if (id === VIRTUAL_WASM_ID || id.includes('cotilla.wasm')) {
+      const wasmDir = resolveWasmDir(rootDir);
+      const gzPath = path.join(wasmDir, 'cotilla.wasm.gz');
+      const rawPath = path.join(wasmDir, 'cotilla.wasm');
+      let gzipped;
+      if (fs.existsSync(gzPath)) {
+        gzipped = fs.readFileSync(gzPath);
+      } else if (fs.existsSync(rawPath)) {
+        gzipped = zlib.gzipSync(fs.readFileSync(rawPath), { level: 9 });
+      } else {
+        throw new Error(`cotilla.wasm not found (checked COTILLA_WASM_DIR, ../dist/wasm, @datf/cotilla-wasm, ${rootDir})`);
       }
-      if (!fs.existsSync(filePath)) {
-        const fallbacks = [
-          path.resolve(rootDir, '../bootstrap/cotilla.wasm'),
-          path.resolve(rootDir, '../web/cotilla.wasm'),
-        ];
-        filePath = fallbacks.find(fs.existsSync) || filePath;
-      }
-      if (fs.existsSync(filePath)) {
-        const buffer = fs.readFileSync(filePath);
-        const gzipped = zlib.gzipSync(buffer, { level: 9 });
-        const b64 = gzipped.toString('base64');
-        const dataUri = `data:application/wasm;encoding=gzip;base64,${b64}`;
-        return `export default ${JSON.stringify(dataUri)};`;
-      }
+      const b64 = gzipped.toString('base64');
+      const dataUri = `data:application/wasm;encoding=gzip;base64,${b64}`;
+      return `export default ${JSON.stringify(dataUri)};`;
     }
   },
 });
-const defaultManifestPath = path.resolve(dir, '../dist/cotilla-chat.manifest.json');
+
+const defaultManifestPath = path.resolve(dir, '../dist/apps/cotilla-chat.manifest.json');
 const customManifestPath = process.env.COTILLA_MANIFEST ? path.resolve(dir, process.env.COTILLA_MANIFEST) : null;
 const manifestPath = (customManifestPath && fs.existsSync(customManifestPath)) ? customManifestPath : defaultManifestPath;
 if (fs.existsSync(manifestPath)) {
