@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prebuild": "node -e \"const fs=require('fs'), path=require('path'), cp=require('child_process'); const candidates=[]; if(process.env.COTILLA_WEB_DIR) candidates.push(path.join(process.env.COTILLA_WEB_DIR,'wasm_exec.js')); candidates.push('../dist/web/wasm_exec.js'); try{ const r=cp.execSync('go env GOROOT').toString().trim(); candidates.push(r+'/lib/wasm/wasm_exec.js', r+'/misc/wasm/wasm_exec.js'); }catch{} const p=candidates.find(fs.existsSync); if(!p){ console.error('wasm_exec.js not found in COTILLA_WEB_DIR, ../dist/web, or GOROOT'); process.exit(1); } fs.mkdirSync('src/vendor',{recursive:true}); fs.copyFileSync(p,'src/vendor/wasm_exec.js');\"",
+    "prebuild": "node -e \"const fs=require('fs'), path=require('path'), cp=require('child_process'); const r=cp.execSync('go env GOROOT').toString().trim(); const p=[path.join(r,'lib/wasm/wasm_exec.js'), path.join(r,'misc/wasm/wasm_exec.js')].find(fs.existsSync); if(!p){ console.error('wasm_exec.js not found in GOROOT: '+r); process.exit(1); } fs.mkdirSync('src/vendor',{recursive:true}); fs.copyFileSync(p,'src/vendor/wasm_exec.js');\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
     "build": "vite build"
